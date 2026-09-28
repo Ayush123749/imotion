@@ -1,0 +1,19 @@
+{
+  "name": "imotion-emotion-detection",
+  "version": "1.0.0",
+  "description": "iMotion — Browser-based emotion detection from face, image, and text",
+  "private": true,
+  "scripts": {
+    "dev": "cd project && python -m http.server 8000",
+    "start": "cd project && python -m http.server 8000",
+    "build": "echo 'Static site - no build step required'"
+  },
+  "keywords": [
+    "emotion-detection",
+    "face-api.js",
+    "computer-vision",
+    "sentiment-analysis"
+  ],
+  "author": "",
+  "license": "MIT"
+}

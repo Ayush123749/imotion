@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iMotion — Emotion Detection</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js" integrity="sha384-gzn2n++arkvyhdNLmUf1s6F5NZ8iAbZ7FhIt+Zw7Jlf1n/vNTmZ3+cYr7S4ogyco" crossorigin="anonymous"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <div class="nav-logo" aria-label="iMotion brand">
+                <svg class="nav-logo-svg" viewBox="0 0 44 44" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="brainGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#7c3aed"/>
+                            <stop offset="100%" stop-color="#06b6d4"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="7" y="10" width="30" height="24" rx="9" fill="rgba(124,58,237,0.08)" stroke="url(#brainGlow)" stroke-width="1.5"/>
+                    <path d="M17 16c-2.5 0-4.5 2-4.5 4.5 0 .9.3 1.8.8 2.5-.4.7-.6 1.5-.6 2.3 0 2.8 2.3 5 5.1 5 1.2 0 2.3-.4 3.2-1.1.8.6 1.8 1 2.9 1 2.7 0 4.9-2.1 4.9-4.9 0-.8-.2-1.6-.6-2.3.5-.7.8-1.6.8-2.5 0-2.6-2.1-4.7-4.7-4.7-1.1 0-2.1.4-2.9 1.1-.9-.8-2.1-1.3-3.4-1.3Zm1.5 5.5c1.2 0 2.1 1 2.1 2.1 0 .6-.2 1.2-.7 1.7l-.8.8-.8-.8c-.5-.5-.7-1.1-.7-1.7 0-1.1.9-2.1 2.1-2.1Zm8 0c1.2 0 2.1 1 2.1 2.1 0 .6-.2 1.2-.7 1.7l-.8.8-.8-.8c-.5-.5-.7-1.1-.7-1.7 0-1.1.9-2.1 2.1-2.1Z" fill="url(#brainGlow)" opacity="0.9"/>
+                    <circle cx="14" cy="18" r="1.7" fill="#7c3aed"/>
+                    <circle cx="30" cy="18" r="1.7" fill="#06b6d4"/>
+                    <path d="M12 28h20M16 30l-2.5 4M28 30l2.5 4" stroke="#374151" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>iMotion</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-link active" data-tab="media">Live Face</button>
+                <button class="nav-link" data-tab="image">Image Upload</button>
+                <button class="nav-link" data-tab="text">Text Analysis</button>
+                <button class="nav-link" data-tab="about">About</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ════════════ MEDIA TAB ════════════ -->
+    <section id="tab-media" class="tab active">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge">Live Expression Estimation</div>
+            <h1>Read <span class="gradient-text">Facial Signals</span> in Real Time</h1>
+            <p>Use your camera to estimate visible facial expressions and compare them with text-based sentiment cues. This is an expression-estimation demo, not a diagnosis.</p>
+            <div class="hero-cta">
+                <button id="btnGrant" class="btn btn-primary btn-lg">📷 Enable Camera</button>
+            </div>
+            <p id="permStatus" class="hero-status">Click to grant camera access</p>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-grid">
+            <!-- Left: Video / Upload -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>Video Feed</h3>
+                    <span class="panel-badge" id="statusBadge">Inactive</span>
+                </div>
+
+                <!-- Camera Placeholder -->
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <p>Click <strong>"Enable Camera"</strong> above to start live detection</p>
+                </div>
+
+                <!-- Video Frame (camera active) -->
+                <div class="video-container" id="videoContainer" style="display:none;">
+                    <div class="video-frame">
+                        <video id="vidPlayer" autoplay muted playsinline></video>
+                        <canvas id="vidOverlay"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Settings & Results -->
+            <div class="panel">
+                <!-- Settings -->
+                <div class="settings-panel">
+                    <h3>Settings</h3>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="cameraSelect">Camera</label>
+                            <select id="cameraSelect" aria-label="Choose camera device">
+                                <option value="">Default Camera</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="detectionMode">Detection Mode</label>
+                            <select id="detectionMode" aria-label="Choose detection mode">
+                                <option value="face" selected>Face Detection</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="sensitivity">Sensitivity</label>
+                            <select id="sensitivity" aria-label="Choose sensitivity level">
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emotion Results -->
+                <div class="emotion-panel">
+                    <h3>Live Results</h3>
+                    <div class="emotion-results">
+                        <div class="emotion-card">
+                            <div class="emotion-icon" id="emoFaceEmoji">😊</div>
+                            <div class="emotion-info">
+                                <span class="emotion-name" id="emoFace">—</span>
+                                <span class="emotion-type">Facial Expression</span>
+                            </div>
+                        </div>
+                        <div class="emotion-card emotion-combined">
+                            <div class="emotion-icon" id="emoComboEmoji">📊</div>
+                            <div class="emotion-info">
+                                <span class="emotion-name" id="emoCombo">No estimate yet</span>
+                                <span class="emotion-type">Confidence Overview</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Emotion Bars -->
+                    <div id="liveBars" class="live-bars"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features-section">
+            <div class="features-header">
+                <h2>Powerful Emotion Detection Features</h2>
+                <p>Advanced AI technology for accurate emotion recognition</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                    </div>
+                    <h3>Real-time Detection</h3>
+                    <p>Analyze facial expressions and voice tones in real time as they happen</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 8v4l3 3"/></svg>
+                    </div>
+                    <h3>Image Analysis</h3>
+                    <p>Upload a photo to explore expression estimates for each detected face</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3>Text Sentiment</h3>
+                    <p>Review local text-estimation cues from user-provided sentences</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    </div>
+                    <h3>Clean Dashboard</h3>
+                    <p>Beautiful, intuitive interface showing all your emotion data at a glance</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ IMAGE TAB ════════════ -->
+    <section id="tab-image" class="tab">
+        <div class="hero">
+            <div class="hero-badge">Image Analysis</div>
+            <h1>Detect Emotions from <span class="gradient-text">Any Image</span></h1>
+            <p>Upload an image and our AI will detect the emotion on every face visible in it</p>
+        </div>
+        <div class="image-content">
+            <!-- Upload Panel -->
+            <div class="panel image-panel">
+                <h3>Upload Image</h3>
+                <div class="img-dropzone" id="imgDropzone">
+                    <div class="img-dropzone-inner">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p class="upload-title">Drop an image here</p>
+                        <p class="upload-desc">or click to browse — JPG, PNG, WEBP</p>
+                        <div class="upload-actions">
+                            <label class="btn btn-outline">
+                                Browse Files
+                                <input type="file" id="imgUpload" accept="image/*">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <p id="imgFileName" class="file-name"></p>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="panel image-preview-panel">
+                <h3>Analysis Results</h3>
+                <!-- Empty State -->
+                <div id="imgResultEmpty" class="result-empty">
+                    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="14" cy="10" r="1.5" fill="#9ca3af"/>
+                        <circle cx="8" cy="10" r="1.5" fill="#9ca3af"/>
+                        <path d="M8 17c1-2 4-3 8 0"/>
+                    </svg>
+                    <p>Upload an image to see emotion analysis</p>
+                </div>
+                <!-- Analyzer -->
+                <div id="imgAnalyzing" style="display:none; text-align:center; padding:40px; color:#7c3aed;">
+                    <div class="spinner" style="margin:0 auto 12px;"></div>
+                    <p>Analyzing image for faces...</p>
+                </div>
+                <!-- Results -->
+                <div id="imgResults" style="display:none;">
+                    <button id="imgClearBtn" class="btn btn-outline img-clear-btn" title="Remove current image">✕ Remove Image</button>
+                    <!-- Face Cards Grid -->
+                    <div id="imgFaceCards" class="face-cards-grid"></div>
+                    <!-- Image Preview with Canvas -->
+                    <div class="img-preview-wrap" id="imgPreviewWrap">
+                        <img id="imgPreview" src="" alt="Preview">
+                        <canvas id="imgFaceCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ════════════ TEXT TAB ════════════ -->
+    <section id="tab-text" class="tab">
+        <div class="text-hero">
+            <div class="hero-badge">Text Analysis</div>
+            <h1>Understand Emotions in <span class="gradient-text">Your Text</span></h1>
+            <p>Enter any text and discover the hidden emotions within it</p>
+        </div>
+        <div class="text-content">
+            <div class="text-panel">
+                <label for="txtInput" class="sr-only">Text to analyze</label>
+                <textarea id="txtInput" placeholder="Type or paste your text here..."></textarea>
+                <div class="text-actions">
+                    <label class="history-toggle" for="historyToggle">
+                        <input id="historyToggle" type="checkbox">
+                        <span>Save result to history</span>
+                    </label>
+                </div>
+                <button id="btnAnalyze" class="btn btn-primary btn-lg">Analyze Emotion</button>
+            </div>
+            <div class="result-panel">
+                <div id="txtResult" class="result-inner" style="display:none;">
+                    <div class="result-main">
+                        <span class="result-emo-emoji" id="txtEmoji">😊</span>
+                        <div class="result-emo-info">
+                            <span class="result-label" id="txtEmotionLabel">Happiness</span>
+                            <span class="result-confidence" id="txtConfidence">100%</span>
+                        </div>
+                    </div>
+                    <div id="txtBars"></div>
+                </div>
+                <div id="txtEmpty" class="result-empty">
+                    <p>Results will appear here after analysis</p>
+                </div>
+            </div>
+        </div>
+        <!-- History -->
+        <div class="history-section">
+            <h3>Analysis History</h3>
+            <div id="histList"><p class="empty-state">No analyses yet</p></div>
+        </div>
+    </section>
+
+    <!-- ════════════ ABOUT TAB ════════════ -->
+    <section id="tab-about" class="tab">
+        <div class="about-section">
+            <h1>About <span class="gradient-text">iMotion</span></h1>
+            <p class="about-desc">iMotion is a browser-based expression-estimation demo that analyzes live faces, uploaded images, and text cues while keeping the experience transparent, quick, and privacy-friendly.</p>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h3>🧠 face-api.js</h3>
+                    <p>Run face detection and expression estimation directly in the browser for live and uploaded imagery</p>
+                </div>
+                <div class="tech-card">
+                    <h3>📷 Local camera access</h3>
+                    <p>Ask for user permission only when needed and release media tracks when the session ends</p>
+                </div>
+                <div class="tech-card">
+                    <h3>📝 Lexicon Analysis</h3>
+                    <p>Use a local keyword-based sentiment estimate for sentence analysis and label the output as a heuristic</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <span class="footer-logo">iMotion</span>
+                <p>Browser-based expression estimation in real time</p>
+            </div>
+            <div class="footer-links">
+                <div class="footer-col">
+                    <h4>Features</h4>
+                    <a href="#">Face Detection</a>
+                    <a href="#">Image Analysis</a>
+                    <a href="#">Text Sentiment</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Tech</h4>
+                    <a href="#">face-api.js</a>
+                    <a href="#">Browser ML</a>
+                    <a href="#">Local Estimation</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Resources</h4>
+                    <a href="#">Documentation</a>
+                    <a href="#">API Reference</a>
+                    <a href="#">Support</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>iMotion &copy; 2026. Built with AI and love.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
